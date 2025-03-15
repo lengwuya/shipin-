@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>移动端优化视频播放器</title>
     <style>
-        /* 基础样式重置 */
+        /* 全局重置 */
         * {
             margin: 0;
             padding: 0;
@@ -13,38 +13,32 @@
         }
 
         body {
-            background: #1a1a1a;
+            background: #000;
             color: #fff;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            padding: 2rem;
+            touch-action: manipulation; /* 禁用双指缩放 */
         }
 
-        .container {
-            max-width: 1200px;
-            width: 90%;
-            margin: 20px auto;
+        /* 视频容器 (新增安全区域适配) */
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            padding: 0 15px;
+            position: relative;
         }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 2rem;
-            color: #00ff9d;
-            text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
-        }
-
-        /* 视频播放器样式 */
+        /* 动态宽高比容器 */
         .video-wrapper {
             position: relative;
-            padding-bottom: 56.25%; /* 16:9 比例 */
-            height: 0;
+            padding-top: 56.25%; /* 16:9 比例 */
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             background: #000;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
 
         video {
@@ -53,93 +47,57 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* 保持视频原始比例 */
+            object-fit: contain;
+            -webkit-object-fit: contain; /* 兼容 Safari */
         }
 
-        /* 加载提示 */
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-size: 1.2em;
-            color: #888;
-        }
-
-        /* 移动端优化 */
+        /* 移动端特殊优化 */
         @media (max-width: 768px) {
             body {
-                padding: 1rem;
+                padding: env(safe-area-inset-top) env(safe-area-inset-right)  /* 适配刘海屏 */
+                         env(safe-area-inset-bottom) env(safe-area-inset-left);
+                align-items: flex-start; /* 顶部对齐 */
             }
-            
-            h1 {
-                font-size: 1.5em;
+
+            .video-container {
+                padding: 0;
+                max-width: 100%;
+            }
+
+            .video-wrapper {
+                border-radius: 0;
+                padding-top: 177.78%; /* 9:16 竖屏比例 */
+                height: 100vh;
+            }
+
+            video {
+                object-fit: cover; /* 竖屏时填充高度 */
+            }
+        }
+
+        /* 横屏优化 */
+        @media (orientation: landscape) {
+            .video-wrapper {
+                padding-top: 56.25%; /* 恢复 16:9 */
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>测试2</h1>
-        
+    <div class="video-container">
         <div class="video-wrapper">
-            <!-- 视频播放器 -->
-            <video controls preload="metadata" poster="https://via.placeholder.com/800x450?text=视频加载中...">
-                <!-- 主视频源（替换为你的 CDN 链接） -->
+            <video controls 
+                   playsinline 
+                   webkit-playsinline 
+                   x5-video-player-type="h5" 
+                   x5-video-orientation="portrait"
+                   preload="auto"
+                   poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
                 <source src="https://cdn.jsdelivr.net/gh/lengwuya/shipin-@main/shipin.mp4" 
                         type="video/mp4">
-                
-                <!-- 备用视频源（可选） -->
-                <!-- <source src="backup.webm" type="video/webm"> -->
-                
-                <!-- 浏览器不支持提示 -->
-                <track kind="captions" src="#" default>
-                <div class="loading">
-                    您的浏览器不支持 HTML5 视频播放，请尝试以下方案：
-                    <ul>
-                        <li>升级到最新版 Chrome/Firefox/Edge</li>
-                        <li>检查网络连接</li>
-                        <li><a href="https://cdn.jsdelivr.net/gh/lengwuya/shipin-@main/shipin.mp4" 
-                              download>点击下载视频</a></li>
-                    </ul>
-                </div>
+                <p>您的浏览器不支持视频播放，请尝试最新版 Chrome 或 Safari</p>
             </video>
         </div>
     </div>
-
-    <!-- 性能监控脚本（可选） -->
-    <script>
-        // 视频加载状态监控
-        document.addEventListener('DOMContentLoaded', () => {
-            const video = document.querySelector('video');
-            let loadTimeout;
-
-            // 显示加载提示
-            video.addEventListener('waiting', () => {
-                loadTimeout = setTimeout(() => {
-                    console.log('视频加载时间过长，建议检查CDN连接');
-                }, 5000);
-            });
-
-            // 隐藏加载提示
-            video.addEventListener('playing', () => {
-                clearTimeout(loadTimeout);
-            });
-
-            // 错误处理
-            video.addEventListener('error', (e) => {
-                console.error('视频加载错误:', video.error);
-                alert(`视频加载失败: ${getErrorText(video.error.code)}`);
-            });
-
-            function getErrorText(code) {
-                const errors = {
-                    1: "视频下载被用户中止",
-                    2: "网络错误导致下载失败",
-                    3: "视频解码错误",
-                    4: "视频格式不支持"
-                };
-                return errors[code] || "未知错误";
-            }
-        });
-    </script>
 </body>
 </html>
