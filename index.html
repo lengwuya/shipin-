@@ -2,102 +2,143 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <!-- 微信关键meta声明 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>第五次测试</title>
+    <meta name="x5-fullscreen" content="true">
+    <meta name="full-screen" content="yes">
+    <title>第六次测试</title>
     <style>
         /* 全局重置 */
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
+        /* 安全区域适配 */
         body {
             background: #000;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            width: 100vw;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            touch-action: manipulation; /* 禁用双指缩放 */
-        }
-
-        /* 视频容器 (新增安全区域适配) */
-        .video-container {
-            width: 100%;
-            max-width: 800px;
-            padding: 0 15px;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right)
+                     env(safe-area-inset-bottom) env(safe-area-inset-left);
             position: relative;
-        }
-
-        /* 动态宽高比容器 */
-        .video-wrapper {
-            position: relative;
-            padding-top: 56.25%; /* 16:9 比例 */
-            border-radius: 12px;
             overflow: hidden;
-            background: #000;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
 
-        video {
+        /* 导航按钮容器 */
+        .nav-buttons {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            -webkit-object-fit: contain; /* 兼容 Safari */
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            gap: 12px;
+            flex-direction: column;
         }
 
-        /* 移动端特殊优化 */
-        @media (max-width: 768px) {
-            body {
-                padding: env(safe-area-inset-top) env(safe-area-inset-right)  /* 适配刘海屏 */
-                         env(safe-area-inset-bottom) env(safe-area-inset-left);
-                align-items: flex-start; /* 顶部对齐 */
-            }
+        /* 微信专用按钮样式 */
+        .wechat-btn {
+            padding: 10px 20px;
+            background: rgba(0, 255, 157, 0.15);
+            border: 1px solid #00ff9d;
+            border-radius: 25px;
+            color: #00ff9d;
+            text-decoration: none;
+            font-size: 14px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+        }
 
-            .video-container {
-                padding: 0;
-                max-width: 100%;
-            }
+        .wechat-btn:active {
+            background: rgba(0, 255, 157, 0.3);
+            transform: scale(0.95);
+        }
 
-            .video-wrapper {
-                border-radius: 0;
-                padding-top: 177.78%; /* 9:16 竖屏比例 */
-                height: 100vh;
-            }
-
-            video {
-                object-fit: cover; /* 竖屏时填充高度 */
-            }
+        /* X5视频容器 */
+        .x5-video-wrapper {
+            width: 100%;
+            height: 100vh;
+            object-fit: contain;
+            -webkit-object-fit: contain;
         }
 
         /* 横屏优化 */
         @media (orientation: landscape) {
-            .video-wrapper {
-                padding-top: 56.25%; /* 恢复 16:9 */
+            .nav-buttons {
+                flex-direction: row;
+                top: 10px;
+                right: 10px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="video-container">
-        <div class="video-wrapper">
-            <video controls 
-                   playsinline 
-                   webkit-playsinline 
-                   x5-video-player-type="h5" 
-                   x5-video-orientation="portrait"
-                   preload="auto"
-                   poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">
-                <source src="https://cdn.jsdelivr.net/gh/lengwuya/shipin-@main/shipin.mp4" 
-                        type="video/mp4">
-                <p>您的浏览器不支持视频播放，请尝试最新版 Chrome 或 Safari</p>
-            </video>
-        </div>
+    <!-- 导航按钮 -->
+    <div class="nav-buttons">
+        <a href="https://github.com/lengwuya" 
+           class="wechat-btn"
+           target="_blank"
+           rel="noopener noreferrer">
+            GitHub主页
+        </a>
+        <a href="https://example.com" 
+           class="wechat-btn"
+           target="_blank"
+           rel="noopener noreferrer">
+            其他网站
+        </a>
     </div>
+
+    <!-- X5视频播放器 -->
+    <video 
+        id="x5Video"
+        class="x5-video-wrapper"
+        controls
+        playsinline
+        webkit-playsinline
+        x5-video-player-type="h5"
+        x5-video-orientation="portrait"
+        x5-video-player-fullscreen="true"
+        x-webkit-airplay="allow"
+        preload="none"
+        poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+    >
+        <source src="https://cdn.jsdelivr.net/gh/lengwuya/shipin-@main/shipin.mp4" 
+                type="video/mp4">
+        <p style="color:white;">您的设备不支持视频播放</p>
+    </video>
+
+    <!-- 微信专用交互脚本 -->
+    <script>
+        // 环境检测
+        const isWeChat = /MicroMessenger/i.test(navigator.userAgent)
+        const isX5 = /TBS|MQQBrowser/i.test(navigator.userAgent)
+
+        if (isWeChat || isX5) {
+            const video = document.getElementById('x5Video')
+            
+            // 必须用户点击后初始化
+            const initVideo = () => {
+                video.load()
+                video.play().catch(e => console.log('自动播放已阻止，需要用户交互'))
+                document.removeEventListener('click', initVideo)
+                document.removeEventListener('touchstart', initVideo)
+            }
+
+            // 双保险触发
+            document.addEventListener('click', initVideo)
+            document.addEventListener('touchstart', initVideo)
+
+            // 横竖屏切换适配
+            window.addEventListener('orientationchange', () => {
+                video.style.width = window.innerWidth + 'px'
+                video.style.height = window.innerHeight + 'px'
+                setTimeout(() => video.play(), 300)
+            })
+        }
+    </script>
 </body>
 </html>
