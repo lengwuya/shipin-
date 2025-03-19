@@ -3,44 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- SEO优化 -->
-    <meta name="description" content="专业视频播放门户">
-    <!-- 安全策略 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.yourcdn.com">
-    <title>优化版视频门户</title>
-    
-    <!-- 样式重置与基础框架 -->
+    <title>全功能视频门户 - 优化版</title>
     <style>
-        /* 重置浏览器默认样式[3,7](@ref) */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        
-        /* 视频容器（修复布局问题） */
+        /* 重置浏览器默认样式[8,10](@ref) */
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+
+        /* 视频容器优化[1,3](@ref) */
         .video-container {
             position: relative;
-            padding-bottom: 56.25%; /* 16:9比例 */
-            margin: 20px auto;
+            width: 90%;
             max-width: 1200px;
+            margin: 20px auto;
             background: #000;
             border-radius: 12px;
             overflow: hidden;
+            aspect-ratio: 16/9; /* 自动保持16:9比例 */
         }
         video {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
 
-        /* 按钮交互优化[6,8](@ref) */
+        /* 导航按钮组重构[4,6,11](@ref) */
         .nav-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(100px, 1fr));
             gap: 15px;
-            margin: 25px 10px;
+            width: 90%;
+            max-width: 1200px;
+            margin: 25px auto;
+            padding: 0 10px;
         }
         .nav-btn {
             padding: 14px 20px;
@@ -50,27 +52,43 @@
             color: white;
             font-size: 16px;
             cursor: pointer;
-            transition: transform 0.2s ease, opacity 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-btn::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.5s ease;
         }
         .nav-btn:hover {
             transform: translateY(-2px);
-            opacity: 0.9;
+            box-shadow: 0 5px 15px rgba(0,122,255,0.3);
         }
-        .nav-btn:active {
-            transform: translateY(1px);
+        .nav-btn:active::after {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0;
         }
 
-        /* 错误提示优化 */
+        /* 错误提示优化[7,9](@ref) */
         .error-panel {
             display: none;
             padding: 20px;
             background: #ffebee;
             border-radius: 8px;
             margin: 20px auto;
+            width: 90%;
             max-width: 1200px;
         }
 
-        /* 响应式布局[7](@ref) */
+        /* 响应式布局[10,12](@ref) */
         @media (max-width: 768px) {
             .nav-grid {
                 grid-template-columns: 1fr;
@@ -84,24 +102,24 @@
 </head>
 <body>
     <main class="container">
-        <!-- 视频播放器（修复无法播放问题） -->
+        <!-- 视频播放器（修复播放问题[1,2,3](@ref)） -->
         <div class="video-container">
             <video id="mainVideo" 
                    controls 
                    playsinline
                    webkit-playsinline
                    preload="metadata"
-                   poster="https://cdn.yourcdn.com/thumbnails/thumbnail.jpg">
-                <source src="https://cdn.yourcdn.com/videos/shipin.mp4" type="video/mp4">
-                <source src="https://cdn.yourcdn.com/videos/shipin.m3u8" type="application/x-mpegURL">
-                <track kind="captions" src="captions.vtt" srclang="zh" label="中文字幕">
+                   poster="thumbnail.jpg">
+                <source src="video.mp4" type="video/mp4">
+                <source src="video.m3u8" type="application/x-mpegURL">
+                <track kind="captions" src="captions.vtt" srclang="zh" label="中文">
                 <div class="fallback-message">
-                    您的浏览器不支持HTML5视频，请升级至最新版本浏览器
+                    您的浏览器不支持HTML5视频，请升级至最新版本
                 </div>
             </video>
         </div>
 
-        <!-- 导航按钮组（修复无响应问题） -->
+        <!-- 导航按钮组（解决无响应问题[4,5,6](@ref)） -->
         <div class="nav-grid">
             <button class="nav-btn" data-target="page1.html">
                 📺 频道一
@@ -114,7 +132,7 @@
             </button>
         </div>
 
-        <!-- 错误提示 -->
+        <!-- 错误提示优化[7,9](@ref) -->
         <div class="error-panel" id="errorPanel">
             <h3>播放异常</h3>
             <p>错误代码：<span id="errorCode"></span></p>
@@ -122,15 +140,14 @@
         </div>
     </main>
 
-    <!-- 优化后的脚本 -->
     <script>
-        // 视频错误处理（修复播放问题）[6](@ref)
+        // 视频错误处理[1,3,7](@ref)
         const video = document.getElementById('mainVideo');
         const errorMap = {
-            1: "播放中止",
-            2: "网络错误",
-            3: "解码失败",
-            4: "格式不支持"
+            1: "播放中止（MEDIA_ERR_ABORTED）",
+            2: "网络错误（MEDIA_ERR_NETWORK）",
+            3: "解码失败（MEDIA_ERR_DECODE）",
+            4: "格式不支持（MEDIA_ERR_SRC_NOT_SUPPORTED）"
         };
 
         video.addEventListener('error', () => {
@@ -139,17 +156,35 @@
             document.getElementById('errorPanel').style.display = 'block';
         });
 
-        // 按钮交互优化（修复无响应问题）[8](@ref)
+        // 按钮交互优化[4,5,6](@ref)
         document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function(e) {
+                // 安全导航
                 const targetPage = this.dataset.target;
-                window.open(targetPage, '_blank', 'noopener,noreferrer');
-                this.classList.add('click-effect');
-                setTimeout(() => this.classList.remove('click-effect'), 200);
+                const newWindow = window.open();
+                newWindow.opener = null;
+                newWindow.location = targetPage;
+                
+                // 点击动效
+                const ripple = document.createElement('div');
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: 100px;
+                    height: 100px;
+                    background: rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    transform: translate(-50%, -50%) scale(0);
+                    animation: ripple 0.6s linear;
+                `;
+                const rect = this.getBoundingClientRect();
+                ripple.style.left = `${e.clientX - rect.left}px`;
+                ripple.style.top = `${e.clientY - rect.top}px`;
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
             });
         });
 
-        // 自动重试机制
+        // 自动重试机制[3,7](@ref)
         function retryPlayback() {
             video.load();
             video.play().catch(error => {
@@ -158,11 +193,15 @@
             document.getElementById('errorPanel').style.display = 'none';
         }
 
-        // 视窗尺寸监听（优化布局）[7](@ref)
-        window.addEventListener('resize', () => {
-            const container = document.querySelector('.container');
-            container.style.padding = window.innerWidth < 768 ? '10px' : '20px';
-        });
+        // 添加动画关键帧
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                from { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+                to { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
