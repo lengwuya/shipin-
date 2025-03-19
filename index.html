@@ -110,8 +110,8 @@
                    webkit-playsinline
                    preload="metadata"
                    poster="thumbnail.jpg">
-                <source src="video.mp4" type="video/mp4">
-                <source src="video.m3u8" type="application/x-mpegURL">
+                <source src="shipin.mp4" type="video/mp4">
+                <source src="shipin.m3u8" type="application/x-mpegURL">
                 <track kind="captions" src="captions.vtt" srclang="zh" label="中文">
                 <div class="fallback-message">
                     您的浏览器不支持HTML5视频，请升级至最新版本
@@ -132,13 +132,7 @@
             </button>
         </div>
 
-        <!-- 错误提示优化[7,9](@ref) -->
-        <div class="error-panel" id="errorPanel">
-            <h3>播放异常</h3>
-            <p>错误代码：<span id="errorCode"></span></p>
-            <button class="nav-btn" onclick="retryPlayback()">重试播放</button>
-        </div>
-    </main>
+       
 
     <script>
         // 视频错误处理[1,3,7](@ref)
