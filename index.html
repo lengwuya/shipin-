@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 微信X5内核优化 -->
+    <!-- 微信X5优化 -->
     <meta name="x5-video-player-type" content="h5">
-    <meta name="x5-video-player-fullscreen" content="true">
-    <title>本地化视频播放解决方案</title>
+    <title>增强版视频播放器</title>
     <style>
         :root {
             --primary: #2196F3;
-            --error: #ff4444;
+            --secondary: #FF4081;
+            --bg: #f8f9fa;
         }
 
         body {
             margin: 0;
             padding: 20px;
-            background: #f8f9fa;
+            background: var(--bg);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
@@ -27,10 +27,11 @@
 
         .video-container {
             position: relative;
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            background: #000;
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            background: #000;
+            margin-bottom: 20px;
         }
 
         video {
@@ -39,89 +40,131 @@
             display: block;
         }
 
-        .status-message {
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 8px;
-            text-align: center;
-            display: none;
+        .nav-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 25px;
         }
 
-        .error {
-            background: #ffeeee;
-            color: var(--error);
-        }
-
-        .control-panel {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .action-btn {
-            display: inline-block;
-            padding: 12px 25px;
-            margin: 0 10px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 500;
-            cursor: pointer;
+        .nav-btn {
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
             background: var(--primary);
             color: white;
-            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .custom-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .video-container:hover .custom-controls {
+            opacity: 1;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .progress-filled {
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        @media (max-width: 480px) {
+            .nav-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .custom-controls {
+                padding: 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="video-container">
-            <video 
-                id="mainVideo"
-                controls
-                playsinline
-                webkit-playsinline
-                preload="metadata"
-                poster="thumbnail.jpg">
+            <video id="mainVideo" controls playsinline webkit-playsinline>
                 <source src="shipin.mp4" type="video/mp4">
-                您的浏览器不支持HTML5视频播放
+                您的浏览器不支持视频播放
             </video>
+            
+            <!-- 自定义控制条 -->
+            <div class="custom-controls">
+                <div class="progress-bar">
+                    <div class="progress-filled" id="progress"></div>
+                </div>
+            </div>
         </div>
 
-        <div id="errorStatus" class="status-message error">
-            <h3>播放遇到问题</h3>
-            <p>建议操作：</p>
-            <div class="control-panel">
-                <button class="action-btn" onclick="videoRetry()">重试播放</button>
-                <a href="shipin.mp4" class="action-btn" download>下载视频</a>
-            </div>
+        <!-- 导航按钮 -->
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="window.open('page1.html', '_blank')">页面一</button>
+            <button class="nav-btn" onclick="window.open('page2.html', '_blank')">页面二</button>
+            <button class="nav-btn" onclick="window.open('page3.html', '_blank')">页面三</button>
         </div>
     </div>
 
     <script>
-        // 自动错误检测
+        // 移动端进度控制
         const video = document.getElementById('mainVideo');
-        const errorPanel = document.getElementById('errorStatus');
+        const progress = document.getElementById('progress');
 
-        video.addEventListener('error', () => {
-            errorPanel.style.display = 'block';
+        // 进度条更新
+        video.addEventListener('timeupdate', () => {
+            const percent = (video.currentTime / video.duration) * 100;
+            progress.style.width = percent + '%';
         });
 
-        function videoRetry() {
-            errorPanel.style.display = 'none';
-            video.load();
-            video.play().catch(() => {
-                errorPanel.style.display = 'block';
-            });
+        // 点击进度条跳转
+        document.querySelector('.progress-bar').addEventListener('click', (e) => {
+            const rect = e.target.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        });
+
+        // 微信环境优化
+        if(/MicroMessenger/i.test(navigator.userAgent)) {
+            video.controls = true;  // 强制启用原生控制条
+            video.style.objectFit = 'contain';
         }
 
-        // 微信环境处理
-        if(/MicroMessenger/i.test(navigator.userAgent)) {
-            video.controls = false;
-            video.addEventListener('click', () => {
-                video.play().catch(() => {
-                    errorPanel.style.display = 'block';
-                });
-            });
-        }
+        // 防止控制条自动隐藏
+        let controlsTimeout;
+        video.addEventListener('mousemove', () => {
+            clearTimeout(controlsTimeout);
+            document.querySelector('.custom-controls').style.opacity = 1;
+            controlsTimeout = setTimeout(() => {
+                document.querySelector('.custom-controls').style.opacity = 0;
+            }, 3000);
+        });
     </script>
 </body>
 </html>
