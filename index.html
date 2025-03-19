@@ -184,19 +184,7 @@
             });
         });
 
-      // 改进后的重试播放逻辑
-function retryPlayback() {
-    const video = document.getElementById('mainVideo');
-    const videoSource = video.querySelector('source');
-     // 添加随机参数破除缓存
-    const timestamp = Date.now();
-    const newSrc = videoSource.src.split('?')[0] + `?_t=${timestamp}`;
-    
-    // 重新初始化播放器
-    video.pause();
-    videoSource.src = newSrc;
-    video.load();
-    
+      
     // 异常捕获增强
     video.play().catch(error => {
         console.error('播放失败:', error);
