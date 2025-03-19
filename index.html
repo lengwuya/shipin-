@@ -76,7 +76,7 @@
         <div class="player-wrapper">
             <video id="mainVideo" controls style="width:100%; border: 2px solid var(--error-color);">
                 <!-- 本地回退源优先 -->
-                <source src="shipin.mp4" type="video/mp4">
+                <source src="shipin.mp4.txt" type="video/mp4">
                 您的浏览器不支持视频播放，请下载视频文件：
                 <a href="shipin.mp4" download>点击下载</a>
             </video>
@@ -91,7 +91,7 @@
             <h4>必查事项：</h4>
             <ol>
                 <li>仓库是否公开？访问检测：<a id="repoLink" target="_blank">GitHub仓库状态</a></li>
-                <li>视频文件是否存在？直接访问：<a id="rawLink" target="_blank">shipin.mp4</a></li>
+                <li>视频文件是否存在？直接访问：<a id="rawLink" target="_blank">shipin.mp4.txt</a></li>
                 <li>GitHub Pages是否启用？访问检测：<a id="pagesLink" target="_blank">GitHub Pages状态</a></li>
             </ol>
         </div>
@@ -102,7 +102,7 @@
         const user = 'lengwuya';      // GitHub用户名
         const repo = 'shipin-';       // 仓库名称
         const branch = 'main';        // 分支名称
-        const filename = 'shipin.mp4';// 视频文件名
+        const filename = 'shipin.mp4.txt';// 视频文件名
 
         // CDN列表（带自动生成链接）
         const cdnConfigs = [
