@@ -3,8 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>视频播放页面</title>
+    <title>高清视频播放器</title>
+    
+    <!-- 使用免费CDN加速的CSS资源 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #607D8B;
+        }
+
         body {
             margin: 0;
             padding: 20px;
@@ -12,49 +21,199 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         .container {
-            max-width: 1000px;
-            width: 100%;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 1100px;
+            width: 95%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            backdrop-filter: blur(10px);
+            margin-top: 30px;
+        }
+
+        .player-wrapper {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
         }
 
         video {
             width: 100%;
             height: auto;
-            max-height: 80vh;
-            border-radius: 4px;
+            max-height: 75vh;
+            display: block;
+        }
+
+        .controls {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: opacity 0.3s;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 8px;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .progress-bar {
+            flex-grow: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .progress-filled {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 2px;
+            width: 0%;
+        }
+
+        .time-display {
+            color: white;
+            font-size: 14px;
+            min-width: 100px;
+            text-align: center;
         }
 
         h1 {
             text-align: center;
-            color: #333;
-            margin-bottom: 20px;
+            color: var(--secondary-color);
+            margin: 0 0 25px 0;
+            font-weight: 600;
+            font-size: 2.2em;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            display: none;
         }
 
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
             .container {
-                padding: 10px;
+                width: 100%;
+                padding: 15px;
+                border-radius: 0;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .control-btn {
+                font-size: 16px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>视频播放器</h1>
-        <video controls>
-            <source src="shipin.mp4" type="video/mp4">
-            您的浏览器不支持视频播放，请升级浏览器或使用现代浏览器访问。
-        </video>
+        <h1>📺 高清视频播放器</h1>
+        <div class="player-wrapper">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <!-- 使用jsDelivr CDN加速视频文件 -->
+            <video id="mainVideo" poster="https://via.placeholder.com/800x450?text=视频加载中...">
+                <source src="https://cdn.jsdelivr.net/gh/lengwuya/shipin@main/shipin.mp4" type="video/mp4">
+                您的浏览器不支持视频播放，请使用最新版Chrome/Firefox/Safari浏览器
+            </video>
+            <div class="controls">
+                <button class="control-btn" id="playBtn"><i class="fas fa-play"></i></button>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-filled" id="progressFilled"></div>
+                </div>
+                <div class="time-display"><span id="currentTime">00:00</span> / <span id="duration">00:00</span></div>
+                <button class="control-btn" id="fullscreenBtn"><i class="fas fa-expand"></i></button>
+            </div>
+        </div>
     </div>
+
+    <script>
+        const video = document.getElementById('mainVideo');
+        const playBtn = document.getElementById('playBtn');
+        const progressFilled = document.getElementById('progressFilled');
+        const currentTimeDisplay = document.getElementById('currentTime');
+        const durationDisplay = document.getElementById('duration');
+        const loading = document.querySelector('.loading');
+
+        // 播放/暂停控制
+        playBtn.addEventListener('click', () => {
+            if (video.paused) {
+                video.play();
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                video.pause();
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+        });
+
+        // 进度条更新
+        video.addEventListener('timeupdate', () => {
+            const progress = (video.currentTime / video.duration) * 100;
+            progressFilled.style.width = `${progress}%`;
+            currentTimeDisplay.textContent = formatTime(video.currentTime);
+        });
+
+        // 点击进度条跳转
+        document.getElementById('progressBar').addEventListener('click', (e) => {
+            const rect = e.target.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        });
+
+        // 全屏功能
+        document.getElementById('fullscreenBtn').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.querySelector('.player-wrapper').requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // 加载状态显示
+        video.addEventListener('waiting', () => loading.style.display = 'block');
+        video.addEventListener('playing', () => loading.style.display = 'none');
+
+        // 时间格式化
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // 初始化视频时长
+        video.addEventListener('loadedmetadata', () => {
+            durationDisplay.textContent = formatTime(video.duration);
+        });
+    </script>
 </body>
 </html>
