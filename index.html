@@ -110,8 +110,8 @@
                    webkit-playsinline
                    preload="metadata"
                    poster="thumbnail.jpg">
-                <source src="shipin.mp4" type="video/mp4">
-                <source src="shipin.m3u8" type="application/x-mpegURL">
+                <source src="video.mp4" type="video/mp4">
+                <source src="video.m3u8" type="application/x-mpegURL">
                 <track kind="captions" src="captions.vtt" srclang="zh" label="中文">
                 <div class="fallback-message">
                     您的浏览器不支持HTML5视频，请升级至最新版本
@@ -184,13 +184,15 @@
             });
         });
 
-      
-    // 异常捕获增强
-    video.play().catch(error => {
-        console.error('播放失败:', error);
-        showErrorDetail(`错误类型：${error.name}（代码${video.error?.code}）`);
-    });
-}
+        // 自动重试机制[3,7](@ref)
+        function retryPlayback() {
+            video.load();
+            video.play().catch(error => {
+                console.error('播放失败:', error);
+            });
+            document.getElementById('errorPanel').style.display = 'none';
+        }
+
         // 添加动画关键帧
         const style = document.createElement('style');
         style.textContent = `
