@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多CDN视频播放器</title>
+    <title>CDN故障修复版播放器</title>
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
-          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- 本地备用图标库 -->
+    <style>
+        .fa-spinner { animation: fa-spin 2s infinite linear; }
+        @keyframes fa-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(359deg); } }
+    </style>
 
     <style>
         :root {
             --primary-color: #2196F3;
-            --secondary-color: #607D8B;
+            --error-color: #ff4444;
         }
 
         body {
@@ -23,216 +24,153 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8f9fa;
+            font-family: system-ui, -apple-system, sans-serif;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1000px;
             width: 95%;
-            background: rgba(255, 255, 255, 0.98);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
-            backdrop-filter: blur(12px);
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .debug-panel {
+            background: #fff8f8;
+            border: 2px solid var(--error-color);
+            padding: 20px;
+            border-radius: 8px;
             margin-top: 20px;
         }
 
-        .player-wrapper {
-            position: relative;
-            border-radius: 16px;
-            overflow: hidden;
-            background: #000;
-            min-height: 500px;
-            transition: transform 0.3s;
+        .cdn-test-list {
+            list-style: none;
+            padding: 0;
         }
 
-        .player-wrapper:hover {
-            transform: translateY(-2px);
-        }
-
-        video {
-            width: 100%;
-            height: auto;
-            max-height: 78vh;
-            display: block;
-        }
-
-        /* CDN状态指示器 */
-        .cdn-status {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0,0,0,0.85);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 25px;
-            font-size: 14px;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s;
-        }
-
-        .cdn-status::before {
-            content: '';
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #4CAF50;
-            animation: pulse 1.5s infinite;
-        }
-
-        .cdn-status.connecting::before {
-            background: #FFC107;
-        }
-
-        .cdn-status.error::before {
-            background: #F44336;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(76,175,80,0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(76,175,80,0); }
-            100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); }
-        }
-
-        /* 优化控制栏 */
-        .controls {
-            padding: 18px;
-            background: rgba(0, 0, 0, 0.85);
-            gap: 20px;
-        }
-
-        .progress-bar {
-            height: 6px;
-            border-radius: 3px;
-        }
-
-        .progress-filled {
-            height: 6px;
-        }
-
-        .control-btn {
-            font-size: 20px;
+        .cdn-test-item {
             padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
         }
 
-        /* 响应式优化 */
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-                border-radius: 12px;
-            }
-            
-            .cdn-status {
-                font-size: 12px;
-                padding: 6px 12px;
-            }
-            
-            .player-wrapper {
-                min-height: 300px;
-            }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
         }
+
+        .healthy { background: #4CAF50; }
+        .unhealthy { background: #ff4444; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📡 智能CDN视频播放器</h1>
+        <h1 style="color: var(--error-color);">⚠️ CDN故障排查播放器</h1>
+        
         <div class="player-wrapper">
-            <div class="cdn-status" id="cdnStatus">
-                <span id="cdnName">正在初始化...</span>
-            </div>
-            
-            <!-- 视频源 -->
-            <video id="mainVideo" controls playsinline>
-                <source data-cdn="jsDelivr全球加速" 
-                        src="https://cdn.jsdelivr.net/gh/lengwuya/shipin-/main/shipin.mp4" 
-                        type="video/mp4">
-                <source data-cdn="GitHack北美节点" 
-                        src="https://raw.githack.com/lengwuya/shipin-/main/shipin.mp4" 
-                        type="video/mp4">
-                <source data-cdn="FastGit亚洲优化" 
-                        src="https://raw.fastgit.org/lengwuya/shipin-/main/shipin.mp4" 
-                        type="video/mp4">
-                <source data-cdn="GitHub直连" 
-                        src="shipin.mp4" 
-                        type="video/mp4">
-                您的浏览器不支持HTML5视频播放
+            <video id="mainVideo" controls style="width:100%; border: 2px solid var(--error-color);">
+                <!-- 本地回退源优先 -->
+                <source src="shipin.mp4" type="video/mp4">
+                您的浏览器不支持视频播放，请下载视频文件：
+                <a href="shipin.mp4" download>点击下载</a>
             </video>
+        </div>
+
+        <div class="debug-panel">
+            <h3>故障自检系统</h3>
+            <ul class="cdn-test-list" id="cdnTestList">
+                <!-- 动态生成CDN检测列表 -->
+            </ul>
             
-            <!-- 控制栏保持不变 -->
+            <h4>必查事项：</h4>
+            <ol>
+                <li>仓库是否公开？访问检测：<a id="repoLink" target="_blank">GitHub仓库状态</a></li>
+                <li>视频文件是否存在？直接访问：<a id="rawLink" target="_blank">shipin.mp4</a></li>
+                <li>GitHub Pages是否启用？访问检测：<a id="pagesLink" target="_blank">GitHub Pages状态</a></li>
+            </ol>
         </div>
     </div>
 
     <script>
-        // CDN管理系统
+        // 配置信息（用户需确认部分）
+        const user = 'lengwuya';      // GitHub用户名
+        const repo = 'shipin-';       // 仓库名称
+        const branch = 'main';        // 分支名称
+        const filename = 'shipin.mp4';// 视频文件名
+
+        // CDN列表（带自动生成链接）
+        const cdnConfigs = [
+            {
+                name: 'GitHub直连',
+                url: `https://${user}.github.io/${repo}/${filename}`,
+                testUrl: `https://github.com/${user}/${repo}/blob/${branch}/${filename}`
+            },
+            {
+                name: 'jsDelivr',
+                url: `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${filename}`,
+                testUrl: `https://purge.jsdelivr.net/gh/${user}/${repo}@${branch}/${filename}`
+            },
+            {
+                name: 'GitHack',
+                url: `https://raw.githack.com/${user}/${repo}/${branch}/${filename}`,
+                testUrl: `https://raw.githack.com/${user}/${repo}/${branch}/${filename}`
+            }
+        ];
+
+        // DOM元素
+        const cdnList = document.getElementById('cdnTestList');
+        const repoLink = document.getElementById('repoLink');
+        const rawLink = document.getElementById('rawLink');
+        const pagesLink = document.getElementById('pagesLink');
+
+        // 初始化链接
+        repoLink.href = `https://github.com/${user}/${repo}`;
+        rawLink.href = `https://github.com/${user}/${repo}/raw/${branch}/${filename}`;
+        pagesLink.href = `https://${user}.github.io/${repo}`;
+
+        // CDN健康检测
+        async function testCDN(cdn) {
+            const li = document.createElement('li');
+            li.className = 'cdn-test-item';
+            li.innerHTML = `
+                ${cdn.name}：
+                <div>
+                    <a href="${cdn.url}" target="_blank">访问链接</a>
+                    <span class="status-dot"></span>
+                </div>
+            `;
+            cdnList.appendChild(li);
+
+            try {
+                const test = await fetch(cdn.testUrl, { method: 'HEAD' });
+                li.querySelector('.status-dot').classList.add(test.ok ? 'healthy' : 'unhealthy');
+                return test.ok;
+            } catch {
+                li.querySelector('.status-dot').classList.add('unhealthy');
+                return false;
+            }
+        }
+
+        // 自动运行检测
+        async function runDiagnostics() {
+            const result = await Promise.all(cdnConfigs.map(testCDN));
+            if (!result.includes(true)) {
+                alert('所有CDN均不可用！请检查：\n1. 仓库是否公开\n2. 文件路径是否正确\n3. GitHub Pages是否启用');
+            }
+        }
+
+        // 优先使用本地源
         const video = document.getElementById('mainVideo');
-        const cdnStatus = document.getElementById('cdnStatus');
-        const cdnName = document.getElementById('cdnName');
-        const sources = Array.from(video.querySelectorAll('source'));
-        let currentSourceIndex = 0;
-
-        // 初始化CDN状态
-        function updateCDNStatus(statusText, statusClass) {
-            cdnName.textContent = statusText;
-            cdnStatus.className = 'cdn-status ' + (statusClass || '');
-        }
-
-        // 智能源切换
-        function tryNextSource() {
-            currentSourceIndex++;
-            if (currentSourceIndex >= sources.length) {
-                updateCDNStatus('所有CDN均不可用', 'error');
-                showFinalError();
-                return;
-            }
-
-            const newSource = sources[currentSourceIndex];
-            updateCDNStatus(`正在连接：${newSource.dataset.cdn}`, 'connecting');
-            
-            video.src = newSource.src;
-            video.load();
-            
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(_ => {
-                    setTimeout(tryNextSource, 1000);
-                });
-            }
-        }
-
-        // 事件监听
-        video.addEventListener('playing', () => {
-            const currentSource = sources[currentSourceIndex];
-            updateCDNStatus(`当前CDN：${currentSource.dataset.cdn}`);
-        });
-
-        video.addEventListener('error', () => {
-            if (video.error.code === 4) {
-                tryNextSource();
-            }
-        });
-
-        // 启动检测
         video.play().catch(e => {
-            updateCDNStatus('正在检测最优CDN...', 'connecting');
-            setTimeout(tryNextSource, 500);
+            console.log('本地源加载失败，启动CDN检测...');
+            runDiagnostics();
         });
-
-        // 网络状态监测
-        video.addEventListener('stalled', () => {
-            updateCDNStatus('网络波动，尝试重新连接...', 'connecting');
-        });
-
-        video.addEventListener('waiting', () => {
-            updateCDNStatus('缓冲中...', 'connecting');
-        });
-
-        // 其他控制逻辑保持不变...
     </script>
 </body>
 </html>
