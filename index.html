@@ -2,143 +2,124 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 微信关键meta声明 -->
+    <!-- iOS核心优化标签[1,3](@ref) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="x5-fullscreen" content="true">
-    <meta name="full-screen" content="yes">
-    <title>第⑦次测试</title>
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- 预加载关键资源[6](@ref) -->
+    <link rel="preload" href="video.mp4" as="video" type="video/mp4">
+    
+    <title>优化版移动端页面</title>
+    
     <style>
-        /* 全局重置 */
+        /* 基础重置[3,7](@ref) */
         * {
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
         }
-
-        /* 安全区域适配 */
-        body {
-            background: #000;
-            width: 100vw;
-            height: 100vh;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right)
-                     env(safe-area-inset-bottom) env(safe-area-inset-left);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* 导航按钮容器 */
-        .nav-buttons {
+        
+        /* 媒体容器定位[1,7](@ref) */
+        .media-container {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 1000;
-            display: flex;
-            gap: 12px;
-            flex-direction: column;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100vw;
+            height: 56.25vw; /* 16:9比例 */
+            max-height: 100vh;
+            background: #000;
         }
-
-        /* 微信专用按钮样式 */
-        .wechat-btn {
-            padding: 10px 20px;
-            background: rgba(0, 255, 157, 0.15);
-            border: 1px solid #00ff9d;
-            border-radius: 25px;
-            color: #00ff9d;
-            text-decoration: none;
-            font-size: 14px;
-            text-align: center;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-        }
-
-        .wechat-btn:active {
-            background: rgba(0, 255, 157, 0.3);
-            transform: scale(0.95);
-        }
-
-        /* X5视频容器 */
-        .x5-video-wrapper {
+        
+        /* 硬件加速优化[3,7](@ref) */
+        video {
             width: 100%;
-            height: 100vh;
+            height: 100%;
             object-fit: contain;
-            -webkit-object-fit: contain;
+            transform: translateZ(0);
+            backface-visibility: hidden;
         }
-
-        /* 横屏优化 */
-        @media (orientation: landscape) {
-            .nav-buttons {
-                flex-direction: row;
-                top: 10px;
-                right: 10px;
-            }
+        
+        /* 播放按钮样式[3](@ref) */
+        .play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.8);
+            border: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .play-btn.active {
+            opacity: 1;
         }
     </style>
+    
+    <!-- 微信JS-SDK支持[1](@ref) -->
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
 </head>
 <body>
-    <!-- 导航按钮 -->
-    <div class="nav-buttons">
-        <a href="https://www.qfnu.edu.cn/" 
-           class="wechat-btn"
-           target="_blank"
-           rel="noopener noreferrer">
-            曲师大官网
-        </a>
-        <a href="https://math.qfnu.edu.cn/" 
-           class="wechat-btn"
-           target="_blank"
-           rel="noopener noreferrer">
-            数学科学学院
-        </a>
+    <!-- 视频容器[1,7](@ref) -->
+    <div class="media-container">
+        <video 
+            id="mainVideo"
+            webkit-playsinline="true"
+            playsinline
+            muted
+            preload="metadata"
+            poster="poster.jpg">
+            <source src="video.mp4" type="video/mp4">
+            <source src="video.webm" type="video/webm">
+            <p>您的浏览器不支持视频播放</p>
+        </video>
+        <button class="play-btn" id="playBtn">▶</button>
     </div>
 
-    <!-- X5视频播放器 -->
-    <video 
-        id="x5Video"
-        class="x5-video-wrapper"
-        controls
-        playsinline
-        webkit-playsinline
-        x5-video-player-type="h5"
-        x5-video-orientation="portrait"
-        x5-video-player-fullscreen="true"
-        x-webkit-airplay="allow"
-        preload="none"
-        poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-    >
-        <source src="shipin.mp4" 
-                type="video/mp4">
-        <p style="color:white;">您的设备不支持视频播放</p>
-    </video>
-
-    <!-- 微信专用交互脚本 -->
     <script>
-        // 环境检测
-        const isWeChat = /MicroMessenger/i.test(navigator.userAgent)
-        const isX5 = /TBS|MQQBrowser/i.test(navigator.userAgent)
-
-        if (isWeChat || isX5) {
-            const video = document.getElementById('x5Video')
+        // 自动播放处理[1,3](@ref)
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('mainVideo');
+            const playBtn = document.getElementById('playBtn');
             
-            // 必须用户点击后初始化
-            const initVideo = () => {
-                video.load()
-                video.play().catch(e => console.log('自动播放已阻止，需要用户交互'))
-                document.removeEventListener('click', initVideo)
-                document.removeEventListener('touchstart', initVideo)
+            // 微信环境适配[1](@ref)
+            if (typeof WeixinJSBridge !== 'undefined') {
+                WeixinJSBridge.invoke('getNetworkType', {}, () => {
+                    video.play().catch(() => showPlayButton());
+                });
+            } else {
+                // 自动播放尝试[3](@ref)
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(() => showPlayButton());
+                }
             }
 
-            // 双保险触发
-            document.addEventListener('click', initVideo)
-            document.addEventListener('touchstart', initVideo)
+            // 用户交互处理[7](@ref)
+            playBtn.addEventListener('click', () => {
+                video.muted = false;
+                video.play();
+                playBtn.classList.remove('active');
+            });
 
-            // 横竖屏切换适配
-            window.addEventListener('orientationchange', () => {
-                video.style.width = window.innerWidth + 'px'
-                video.style.height = window.innerHeight + 'px'
-                setTimeout(() => video.play(), 300)
-            })
-        }
+            function showPlayButton() {
+                playBtn.classList.add('active');
+            }
+        });
+
+        // 可视状态检测[6](@ref)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                video.pause();
+            } else {
+                video.play().catch(() => {});
+            }
+        });
     </script>
 </body>
 </html>
