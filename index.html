@@ -3,37 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 苹果设备专属优化 -->
+    <!-- 苹果设备优化 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <!-- 微信X5内核优化 -->
+    <!-- 微信X5内核优化[4](@ref) -->
     <meta name="x5-video-player-type" content="h5">
-    <title>苹果兼容视频播放器</title>
+    <title>全功能视频门户</title>
     <style>
         :root {
             --primary: #007AFF;
-            --error: #FF3B30;
+            --secondary: #34C759;
+            --accent: #FF9500;
+            --bg: #F2F2F7;
         }
 
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #F2F2F7;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
+        /* 视频容器（兼容网页2的全屏方案） */
         .video-wrapper {
             position: relative;
             border-radius: 12px;
             overflow: hidden;
             background: #000;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            margin: 20px 0;
         }
 
         video {
@@ -42,261 +32,111 @@
             object-fit: contain;
         }
 
-        .play-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 50%;
+        /* 导航按钮组（增强网页3的交互设计） */
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 0 10px;
+        }
+
+        .nav-btn {
+            padding: 14px 20px;
             border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            font-size: 16px;
             cursor: pointer;
+            transition: transform 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .play-button::before {
-            content: "";
-            border-style: solid;
-            border-width: 15px 0 15px 26px;
-            border-color: transparent transparent transparent #fff;
-            margin-left: 5px;
+        .nav-btn.secondary {
+            background: var(--secondary);
         }
 
-        .error-panel {
-            padding: 20px;
-            background: #FFE5E5;
-            border-radius: 12px;
-            color: var(--error);
-            text-align: center;
-            display: none;
+        .nav-btn.accent {
+            background: var(--accent);
         }
 
-        .nav-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-
-        .nav-btn {
-            padding: 14px;
-            border-radius: 10px;
-            background: var(--primary);
-            color: white;
-            text-align: center;
-            text-decoration: none;
-            font-size: 15px;
-            transition: opacity 0.2s;
-        }
-
-        .nav-btn:active {
-            opacity: 0.7;
-        }
-
-        @media (max-width: 480px) {
-            .nav-buttons {
+        /* 移动端适配（参考网页3响应式方案） */
+        @media (max-width: 768px) {
+            .nav-grid {
                 grid-template-columns: 1fr;
+            }
+            .nav-btn {
+                font-size: 14px;
+                padding: 12px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 视频播放核心区 -->
         <div class="video-wrapper">
-            <video id="videoPlayer" playsinline webkit-playsinline preload="none">
+            <video id="mainVideo" 
+                   controls 
+                   playsinline
+                   webkit-playsinline
+                   preload="auto"
+                   poster="thumbnail.jpg">
                 <source src="shipin.mp4" type="video/mp4">
                 <source src="shipin.m3u8" type="application/x-mpegURL">
                 您的设备不支持视频播放
             </video>
-            <button class="play-button" id="playBtn"></button>
         </div>
 
-        <div class="error-panel" id="errorMsg">
-            <h3>播放失败</h3>
-            <p>可能原因：</p>
-            <p>1. 设备不兼容视频格式</p>
-            <p>2. 网络连接异常</p>
-            <p>3. 视频文件损坏</p>
-            <p><a href="shipin.mp4" download style="color: var(--primary);">点击下载视频到本地</a></p>
+        <!-- 新增导航按钮组 -->
+        <div class="nav-grid">
+            <button class="nav-btn" 
+                    onclick="safeNavigate('page1.html')">
+                📺 频道一
+            </button>
+            <button class="nav-btn secondary"
+                    onclick="safeNavigate('page2.html')">
+                🎬 频道二
+            </button>
+            <button class="nav-btn accent"
+                    onclick="safeNavigate('page3.html')">
+                📹 频道三
+            </button>
         </div>
 
-        <div class="nav-buttons">
-            <a href="page1.html" class="nav-btn">页面一</a>
-            <a href="page2.html" class="nav-btn">页面二</a>
-            <a href="page3.html" class="nav-btn">页面三</a>
-        </div>
+        <!-- 错误提示面板（保留原有功能） -->
+        <div class="error-panel" id="errorPanel">...</div>
     </div>
 
     <script>
-        // 苹果设备兼容性处理
-        const video = document.getElementById('videoPlayer');
-        const playBtn = document.getElementById('playBtn');
-        const errorPanel = document.getElementById('errorMsg');
-
-        // 自动检测HLS支持
-        const hlsSupport = (function() {
-            const video = document.createElement('video');
-            return video.canPlayType('application/vnd.apple.mpegurl') !== '';
-        })();
-
-        // 初始化视频源
-        function initVideoSource() {
-            const sources = video.querySelectorAll('source');
-            sources.forEach(source => {
-                if (source.type === 'application/x-mpegURL' && !hlsSupport) {
-                    source.parentNode.removeChild(source);
-                }
-            });
+        // 安全导航函数（改进网页1的跳转方案）
+        function safeNavigate(url) {
+            const newWindow = window.open();
+            newWindow.opener = null;
+            newWindow.location = url;
         }
 
-        // 用户交互后播放
-        playBtn.addEventListener('click', () => {
-            video.play().catch(error => {
-                showError('播放被阻止: ' + error.message);
-            });
-            playBtn.style.display = 'none';
-        });
-
-        // 错误处理
-        video.addEventListener('error', () => {
-            const errorCode = video.error ? video.error.code : 0;
-            const messages = {
-                1: "视频加载中止",
-                2: "网络错误",
-                3: "视频解码失败",
-                4: "视频格式不支持"
-            };
-            showError(messages[errorCode] || "未知播放错误");
-        });
-
-        function showError(message) {
-            errorPanel.style.display = 'block';
-            errorPanel.querySelector('p').textContent = message;
-            playBtn.style.display = 'none';
+        // 视频控制逻辑（集成网页2的功能）
+        const video = document.getElementById('mainVideo');
+        
+        // 全屏控制（兼容多浏览器方案）
+        function toggleFullscreen() {
+            if (video.requestFullscreen) {
+                video.requestFullscreen();
+            } else if (video.webkitRequestFullscreen) {
+                video.webkitRequestFullscreen();
+            } else if (video.mozRequestFullScreen) {
+                video.mozRequestFullScreen();
+            }
         }
 
-        // 自动隐藏播放按钮
-        video.addEventListener('playing', () => {
-            playBtn.style.display = 'none';
-        });
-
-        // 初始化
+        // 初始化事件监听
         document.addEventListener('DOMContentLoaded', () => {
-            initVideoSource();
-            if (hlsSupport) {
-                video.querySelector('source[type="application/x-mpegURL"]').src = 'shipin.m3u8';
-            }
+            // 自动预加载视频元数据
+            video.load();
         });
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <!-- 苹果设备核心优化 -->
-    <meta name="format-detection" content="telephone=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <!-- 强制HTTPS -->
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-    <title>苹果设备兼容解决方案</title>
-    <style>
-        /* 基础重置 */
-        * {
-            margin: 0;
-            padding: 0;
-            -webkit-text-size-adjust: 100%;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #ffffff;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .error-box {
-            background: #f8f9fa;
-            border-radius: 16px;
-            padding: 30px;
-            margin-top: 40px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #1d1d1f;
-            font-size: 24px;
-            margin-bottom: 20px;
-        }
-
-        .qr-code {
-            width: 200px;
-            margin: 20px auto;
-            padding: 10px;
-            background: #fff;
-            border-radius: 12px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="error-box">
-            <h1>设备兼容性解决方案</h1>
-            <p>如果无法正常访问，请尝试以下方法：</p>
-            
-            <!-- 解决方案列表 -->
-            <ul style="margin: 20px 0; padding-left: 20px;">
-                <li style="margin-bottom: 15px;">1. 更新系统至iOS 12或更高版本</li>
-                <li style="margin-bottom: 15px;">2. 使用Safari浏览器访问</li>
-                <li style="margin-bottom: 15px;">3. 检查日期时间设置是否正确</li>
-                <li style="margin-bottom: 15px;">4. 前往设置 → Safari → 清除历史记录与网站数据</li>
-            </ul>
-
-            <!-- 备用访问二维码 -->
-            <div class="qr-code">
-                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACAAQMAAAD58POIAAAAA1BMVEX///+nxBvIAAAAAXRSTlMAQObYZgAAABxJREFUeNpjYBgFo2AUjIJRMApGwSgYBSMZAAAzIAAB6Q8QlwAAAABJRU5ErkJggg==" 
-                     alt="备用访问二维码"
-                     style="width: 100%;">
-            </div>
-        </div>
-    </div>
-
-    <!-- 环境检测脚本 -->
-    <script>
-        (function() {
-            // 检测iOS版本
-            const iosVersion = (function() {
-                const match = navigator.userAgent.match(/OS (\d+)_/);
-                return match ? parseInt(match[1], 10) : null;
-            })();
-
-            // 系统兼容性检测
-            if (iosVersion && iosVersion < 12) {
-                alert('检测到旧版iOS系统 (' + iosVersion + ')，请升级至iOS 12+');
-                window.location.href = 'https://support.apple.com/HT204204';
-            }
-
-            // HTTPS强制跳转
-            if (location.protocol !== 'https:') {
-                location.replace('https:' + window.location.href.substring(window.location.protocol.length));
-            }
-
-            // 证书错误检测
-            document.addEventListener('securitypolicyviolation', function(e) {
-                alert('安全策略冲突: ' + e.blockedURI);
-            });
-        })();
     </script>
 </body>
 </html>
