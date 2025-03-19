@@ -5,56 +5,163 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多CDN视频播放器</title>
     
-    <!-- Font Awesome CDN -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eGBvH0H/ZpiBw==" 
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
           crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <style>
-        /* 保持原有样式不变，新增CDN状态指示 */
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #607D8B;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 95%;
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(12px);
+            margin-top: 20px;
+        }
+
+        .player-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            min-height: 500px;
+            transition: transform 0.3s;
+        }
+
+        .player-wrapper:hover {
+            transform: translateY(-2px);
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            max-height: 78vh;
+            display: block;
+        }
+
+        /* CDN状态指示器 */
         .cdn-status {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.85);
             color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
+            padding: 8px 15px;
+            border-radius: 25px;
+            font-size: 14px;
             z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+
+        .cdn-status::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 1.5s infinite;
+        }
+
+        .cdn-status.connecting::before {
+            background: #FFC107;
+        }
+
+        .cdn-status.error::before {
+            background: #F44336;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76,175,80,0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(76,175,80,0); }
+            100% { box-shadow: 0 0 0 0 rgba(76,175,80,0); }
+        }
+
+        /* 优化控制栏 */
+        .controls {
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.85);
+            gap: 20px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        .progress-filled {
+            height: 6px;
+        }
+
+        .control-btn {
+            font-size: 20px;
+            padding: 10px;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                border-radius: 12px;
+            }
+            
+            .cdn-status {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+            
+            .player-wrapper {
+                min-height: 300px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📺 多CDN视频播放器</h1>
+        <h1>📡 智能CDN视频播放器</h1>
         <div class="player-wrapper">
-            <div class="loading">
-                <i class="fas fa-spinner fa-spin"></i>
+            <div class="cdn-status" id="cdnStatus">
+                <span id="cdnName">正在初始化...</span>
             </div>
-            <div class="error-message" id="errorMsg"></div>
-            <div class="cdn-status" id="cdnStatus">正在连接CDN...</div>
             
-            <!-- 四源播放方案 -->
+            <!-- 视频源 -->
             <video id="mainVideo" controls playsinline>
-                <!-- CDN源优先级排序 -->
-                <source data-cdn="jsDelivr" 
+                <source data-cdn="jsDelivr全球加速" 
                         src="https://cdn.jsdelivr.net/gh/lengwuya/shipin-/main/shipin.mp4" 
                         type="video/mp4">
-                
-                <source data-cdn="GitHack" 
+                <source data-cdn="GitHack北美节点" 
                         src="https://raw.githack.com/lengwuya/shipin-/main/shipin.mp4" 
                         type="video/mp4">
-                
-                <source data-cdn="FastGit" 
+                <source data-cdn="FastGit亚洲优化" 
                         src="https://raw.fastgit.org/lengwuya/shipin-/main/shipin.mp4" 
                         type="video/mp4">
-                
-                <source data-cdn="GitHub" 
+                <source data-cdn="GitHub直连" 
                         src="shipin.mp4" 
                         type="video/mp4">
-
-                您的浏览器不支持视频播放，请使用现代浏览器访问
+                您的浏览器不支持HTML5视频播放
             </video>
             
             <!-- 控制栏保持不变 -->
@@ -62,46 +169,67 @@
     </div>
 
     <script>
-        // 多CDN智能切换系统
+        // CDN管理系统
         const video = document.getElementById('mainVideo');
         const cdnStatus = document.getElementById('cdnStatus');
+        const cdnName = document.getElementById('cdnName');
         const sources = Array.from(video.querySelectorAll('source'));
         let currentSourceIndex = 0;
 
-        // 自动检测可用CDN
+        // 初始化CDN状态
+        function updateCDNStatus(statusText, statusClass) {
+            cdnName.textContent = statusText;
+            cdnStatus.className = 'cdn-status ' + (statusClass || '');
+        }
+
+        // 智能源切换
         function tryNextSource() {
             currentSourceIndex++;
             if (currentSourceIndex >= sources.length) {
+                updateCDNStatus('所有CDN均不可用', 'error');
                 showFinalError();
                 return;
             }
 
             const newSource = sources[currentSourceIndex];
-            cdnStatus.textContent = `正在尝试 ${newSource.dataset.cdn}...`;
+            updateCDNStatus(`正在连接：${newSource.dataset.cdn}`, 'connecting');
+            
             video.src = newSource.src;
             video.load();
-            video.play().catch(e => {
-                setTimeout(tryNextSource, 1500);
-            });
+            
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(_ => {
+                    setTimeout(tryNextSource, 1000);
+                });
+            }
         }
 
-        // 增强错误处理
-        video.addEventListener('error', function() {
-            if (video.error.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
+        // 事件监听
+        video.addEventListener('playing', () => {
+            const currentSource = sources[currentSourceIndex];
+            updateCDNStatus(`当前CDN：${currentSource.dataset.cdn}`);
+        });
+
+        video.addEventListener('error', () => {
+            if (video.error.code === 4) {
                 tryNextSource();
             }
         });
 
-        // 成功加载时显示CDN信息
-        video.addEventListener('play', () => {
-            cdnStatus.textContent = `当前CDN: ${sources[currentSourceIndex].dataset.cdn}`;
-            cdnStatus.style.backgroundColor = '#4CAF50';
+        // 启动检测
+        video.play().catch(e => {
+            updateCDNStatus('正在检测最优CDN...', 'connecting');
+            setTimeout(tryNextSource, 500);
         });
 
-        // 初始化自动播放检测
-        video.play().catch(e => {
-            cdnStatus.textContent = '首次加载可能需要等待CDN响应...';
-            tryNextSource();
+        // 网络状态监测
+        video.addEventListener('stalled', () => {
+            updateCDNStatus('网络波动，尝试重新连接...', 'connecting');
+        });
+
+        video.addEventListener('waiting', () => {
+            updateCDNStatus('缓冲中...', 'connecting');
         });
 
         // 其他控制逻辑保持不变...
