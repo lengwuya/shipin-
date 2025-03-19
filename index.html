@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 微信X5内核深度适配 -->
+    <!-- 微信X5内核优化 -->
     <meta name="x5-video-player-type" content="h5">
     <meta name="x5-video-player-fullscreen" content="true">
-    <meta name="x5-video-orientation" content="portrait">
-    <title>全平台视频播放解决方案</title>
-    <!-- 引入基础播放器 -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.0.4/video-js.min.css" rel="stylesheet">
+    <title>本地化视频播放解决方案</title>
     <style>
         :root {
             --primary: #2196F3;
@@ -21,7 +18,6 @@
             padding: 20px;
             background: #f8f9fa;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
         }
 
         .container {
@@ -29,7 +25,7 @@
             margin: 0 auto;
         }
 
-        .video-box {
+        .video-container {
             position: relative;
             border-radius: 12px;
             overflow: hidden;
@@ -37,9 +33,10 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
 
-        #myVideo {
+        video {
             width: 100%;
             height: auto;
+            display: block;
         }
 
         .status-message {
@@ -55,11 +52,6 @@
             color: var(--error);
         }
 
-        .loading {
-            background: #f0f9ff;
-            color: var(--primary);
-        }
-
         .control-panel {
             margin-top: 20px;
             text-align: center;
@@ -73,157 +65,62 @@
             text-decoration: none;
             font-weight: 500;
             cursor: pointer;
-            transition: transform 0.2s;
-            border: none;
-        }
-
-        .primary-btn {
             background: var(--primary);
-            color: white !important;
-        }
-
-        .ghost-btn {
-            border: 1px solid var(--primary);
-            color: var(--primary);
+            color: white;
+            border: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="video-box">
-            <video-js id="myVideo"
-                class="vjs-default-skin"
+        <div class="video-container">
+            <video 
+                id="mainVideo"
                 controls
                 playsinline
                 webkit-playsinline
-                preload="auto"
-                crossorigin="anonymous"
-                data-setup='{}'>
-            </video-js>
-        </div>
-
-        <div id="loadingStatus" class="status-message loading">
-            <div class="loader"></div>
-            <p>正在连接视频源...</p>
+                preload="metadata"
+                poster="thumbnail.jpg">
+                <source src="shipin.mp4" type="video/mp4">
+                您的浏览器不支持HTML5视频播放
+            </video>
         </div>
 
         <div id="errorStatus" class="status-message error">
             <h3>播放遇到问题</h3>
-            <p id="errorDetail"></p>
+            <p>建议操作：</p>
             <div class="control-panel">
-                <button class="action-btn primary-btn" onclick="switchSource()">切换线路</button>
-                <a id="directLink" class="action-btn ghost-btn" download>
-                    直接下载
-                </a>
+                <button class="action-btn" onclick="videoRetry()">重试播放</button>
+                <a href="shipin.mp4" class="action-btn" download>下载视频</a>
             </div>
         </div>
     </div>
 
-    <!-- Video.js 核心库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.0.4/video.min.js"></script>
     <script>
-        // 多源配置（优先顺序排列）
-        const VIDEO_SOURCES = [
-            {
-                src: "https://fastly.jsdelivr.net/gh/lengwuya/shipin-/shipin.mp4",
-                type: "video/mp4"
-            },
-            {
-                src: "https://github.lengwuya.workers.dev/shipin-/shipin.mp4",
-                type: "video/mp4"
-            },
-            {
-                src: "https://ghproxy.com/https://raw.githubusercontent.com/lengwuya/shipin-/main/shipin.mp4",
-                type: "video/mp4"
-            },
-            {
-                src: "shipin.mp4",
-                type: "video/mp4"
-            }
-        ];
+        // 自动错误检测
+        const video = document.getElementById('mainVideo');
+        const errorPanel = document.getElementById('errorStatus');
 
-        // 播放器实例
-        let player = null;
-        let currentSource = 0;
+        video.addEventListener('error', () => {
+            errorPanel.style.display = 'block';
+        });
 
-        // 初始化播放器
-        function initPlayer() {
-            player = videojs('myVideo', {
-                responsive: true,
-                controlBar: {
-                    pictureInPictureToggle: false
-                },
-                html5: {
-                    nativeTextTracks: false,
-                    vhs: {
-                        overrideNative: true,
-                        withCredentials: false
-                    }
-                }
+        function videoRetry() {
+            errorPanel.style.display = 'none';
+            video.load();
+            video.play().catch(() => {
+                errorPanel.style.display = 'block';
             });
-
-            // 事件监听
-            player.ready(() => {
-                showStatus('loading');
-                player.src(VIDEO_SOURCES[currentSource]);
-            });
-
-            player.on('error', handleError);
-            player.on('loadedmetadata', () => showStatus('hide'));
-            player.on('loadstart', () => showStatus('loading'));
-        }
-
-        // 错误处理
-        function handleError() {
-            const error = player.error();
-            showStatus('error', `错误代码：${error.code} - ${getErrorDesc(error)}`);
-            document.getElementById('directLink').href = VIDEO_SOURCES[currentSource].src;
-        }
-
-        // 状态显示
-        function showStatus(type, message) {
-            document.getElementById('loadingStatus').style.display = type === 'loading' ? 'block' : 'none';
-            const errorEl = document.getElementById('errorStatus');
-            errorEl.style.display = type === 'error' ? 'block' : 'none';
-            if(message) document.getElementById('errorDetail').textContent = message;
-        }
-
-        // 切换视频源
-        function switchSource() {
-            currentSource = (currentSource + 1) % VIDEO_SOURCES.length;
-            player.src(VIDEO_SOURCES[currentSource]);
-            showStatus('loading');
-            player.play();
-        }
-
-        // 错误代码解释
-        function getErrorDesc(error) {
-            const codes = {
-                1: "视频加载中止",
-                2: "网络错误",
-                3: "视频解码失败",
-                4: "视频格式不支持"
-            };
-            return codes[error.code] || "未知错误";
         }
 
         // 微信环境处理
-        function isWechat() {
-            return /MicroMessenger/i.test(navigator.userAgent);
-        }
-
-        // 启动播放器
-        window.onload = () => {
-            initPlayer();
-            if(isWechat()) setupWechat();
-        };
-
-        // 微信专属配置
-        function setupWechat() {
-            const videoEl = document.getElementById('myVideo_html5_api');
-            videoEl.setAttribute('x5-video-player-type', 'h5');
-            videoEl.setAttribute('x5-playsinline', 'true');
-            videoEl.style.objectFit = 'contain';
+        if(/MicroMessenger/i.test(navigator.userAgent)) {
+            video.controls = false;
+            video.addEventListener('click', () => {
+                video.play().catch(() => {
+                    errorPanel.style.display = 'block';
+                });
+            });
         }
     </script>
 </body>
