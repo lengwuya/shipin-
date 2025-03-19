@@ -184,15 +184,25 @@
             });
         });
 
-        // 自动重试机制[3,7](@ref)
-        function retryPlayback() {
-            video.load();
-            video.play().catch(error => {
-                console.error('播放失败:', error);
-            });
-            document.getElementById('errorPanel').style.display = 'none';
-        }
-
+      // 改进后的重试播放逻辑
+function retryPlayback() {
+    const video = document.getElementById('mainVideo');
+    const videoSource = video.querySelector('source');
+     // 添加随机参数破除缓存
+    const timestamp = Date.now();
+    const newSrc = videoSource.src.split('?')[0] + `?_t=${timestamp}`;
+    
+    // 重新初始化播放器
+    video.pause();
+    videoSource.src = newSrc;
+    video.load();
+    
+    // 异常捕获增强
+    video.play().catch(error => {
+        console.error('播放失败:', error);
+        showErrorDetail(`错误类型：${error.name}（代码${video.error?.code}）`);
+    });
+}
         // 添加动画关键帧
         const style = document.createElement('style');
         style.textContent = `
