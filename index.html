@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 微信X5内核优化 -->
+    <!-- 微信X5内核深度适配 -->
     <meta name="x5-video-player-type" content="h5">
     <meta name="x5-video-player-fullscreen" content="true">
     <meta name="x5-video-orientation" content="portrait">
-    <title>微信高清视频播放</title>
+    <title>全平台视频播放解决方案</title>
+    <!-- 引入基础播放器 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.0.4/video-js.min.css" rel="stylesheet">
     <style>
         :root {
             --primary: #2196F3;
-            --bg: #f5f5f5;
+            --error: #ff4444;
         }
-        
+
         body {
             margin: 0;
             padding: 20px;
-            background: var(--bg);
+            background: #f8f9fa;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
@@ -27,7 +29,7 @@
             margin: 0 auto;
         }
 
-        .video-container {
+        .video-box {
             position: relative;
             border-radius: 12px;
             overflow: hidden;
@@ -35,167 +37,194 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.1);
         }
 
-        #videoElement {
+        #myVideo {
             width: 100%;
             height: auto;
-            display: block;
         }
 
-        .loader {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.2);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .status-message {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: center;
             display: none;
         }
 
-        @keyframes spin {
-            to { transform: translate(-50%, -50%) rotate(360deg); }
+        .error {
+            background: #ffeeee;
+            color: var(--error);
         }
 
-        .control-bar {
+        .loading {
+            background: #f0f9ff;
+            color: var(--primary);
+        }
+
+        .control-panel {
             margin-top: 20px;
             text-align: center;
         }
 
-        .retry-btn {
+        .action-btn {
             display: inline-block;
             padding: 12px 25px;
-            background: var(--primary);
-            color: white !important;
+            margin: 0 10px;
             border-radius: 25px;
             text-decoration: none;
             font-weight: 500;
             cursor: pointer;
             transition: transform 0.2s;
             border: none;
-            font-size: 16px;
         }
 
-        .wechat-alert {
-            display: none;
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .primary-btn {
+            background: var(--primary);
+            color: white !important;
         }
 
-        .cdn-switch {
-            font-size: 14px;
-            color: #666;
-            margin-top: 15px;
-            cursor: pointer;
-            text-decoration: underline;
+        .ghost-btn {
+            border: 1px solid var(--primary);
+            color: var(--primary);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="video-container">
-            <div class="loader" id="loader"></div>
-            <video 
-                id="videoElement"
+        <div class="video-box">
+            <video-js id="myVideo"
+                class="vjs-default-skin"
                 controls
                 playsinline
                 webkit-playsinline
-                x5-playsinline
-                preload="none"
-                controlslist="nodownload"
-            >
-                <!-- 多CDN备用源 -->
-                <source src="https://fastly.jsdelivr.net/gh/lengwuya/shipin-/shipin.mp4" type="video/mp4">
-                <source src="https://cdn.statically.io/gh/lengwuya/shipin-/main/shipin.mp4" type="video/mp4">
-                您的浏览器不支持视频播放
-            </video>
+                preload="auto"
+                crossorigin="anonymous"
+                data-setup='{}'>
+            </video-js>
         </div>
 
-        <div class="control-bar">
-            <button class="retry-btn" id="retryBtn" onclick="initVideo()">重新加载视频</button>
-            <div class="cdn-switch" onclick="switchCDN()">切换加速线路</div>
+        <div id="loadingStatus" class="status-message loading">
+            <div class="loader"></div>
+            <p>正在连接视频源...</p>
         </div>
 
-        <div class="wechat-alert" id="wechatAlert">
-            <h3>微信播放优化提示</h3>
-            <p>① 轻点视频区域开始加载</p>
-            <p>② 长按视频选择「刷新」可重置</p>
-            <p>③ 建议使用浏览器打开获得最佳体验</p>
+        <div id="errorStatus" class="status-message error">
+            <h3>播放遇到问题</h3>
+            <p id="errorDetail"></p>
+            <div class="control-panel">
+                <button class="action-btn primary-btn" onclick="switchSource()">切换线路</button>
+                <a id="directLink" class="action-btn ghost-btn" download>
+                    直接下载
+                </a>
+            </div>
         </div>
     </div>
 
+    <!-- Video.js 核心库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.0.4/video.min.js"></script>
     <script>
-        // 多CDN源配置
-        const CDN_SOURCES = [
-            "https://fastly.jsdelivr.net/gh/lengwuya/shipin-/shipin.mp4",
-            "https://cdn.statically.io/gh/lengwuya/shipin-/main/shipin.mp4",
-            "https://ghproxy.com/https://raw.githubusercontent.com/lengwuya/shipin-/main/shipin.mp4"
+        // 多源配置（优先顺序排列）
+        const VIDEO_SOURCES = [
+            {
+                src: "https://fastly.jsdelivr.net/gh/lengwuya/shipin-/shipin.mp4",
+                type: "video/mp4"
+            },
+            {
+                src: "https://github.lengwuya.workers.dev/shipin-/shipin.mp4",
+                type: "video/mp4"
+            },
+            {
+                src: "https://ghproxy.com/https://raw.githubusercontent.com/lengwuya/shipin-/main/shipin.mp4",
+                type: "video/mp4"
+            },
+            {
+                src: "shipin.mp4",
+                type: "video/mp4"
+            }
         ];
-        
-        let currentCDN = 0;
-        const video = document.getElementById('videoElement');
-        const loader = document.getElementById('loader');
-        const wechatAlert = document.getElementById('wechatAlert');
 
-        // 检测微信环境
+        // 播放器实例
+        let player = null;
+        let currentSource = 0;
+
+        // 初始化播放器
+        function initPlayer() {
+            player = videojs('myVideo', {
+                responsive: true,
+                controlBar: {
+                    pictureInPictureToggle: false
+                },
+                html5: {
+                    nativeTextTracks: false,
+                    vhs: {
+                        overrideNative: true,
+                        withCredentials: false
+                    }
+                }
+            });
+
+            // 事件监听
+            player.ready(() => {
+                showStatus('loading');
+                player.src(VIDEO_SOURCES[currentSource]);
+            });
+
+            player.on('error', handleError);
+            player.on('loadedmetadata', () => showStatus('hide'));
+            player.on('loadstart', () => showStatus('loading'));
+        }
+
+        // 错误处理
+        function handleError() {
+            const error = player.error();
+            showStatus('error', `错误代码：${error.code} - ${getErrorDesc(error)}`);
+            document.getElementById('directLink').href = VIDEO_SOURCES[currentSource].src;
+        }
+
+        // 状态显示
+        function showStatus(type, message) {
+            document.getElementById('loadingStatus').style.display = type === 'loading' ? 'block' : 'none';
+            const errorEl = document.getElementById('errorStatus');
+            errorEl.style.display = type === 'error' ? 'block' : 'none';
+            if(message) document.getElementById('errorDetail').textContent = message;
+        }
+
+        // 切换视频源
+        function switchSource() {
+            currentSource = (currentSource + 1) % VIDEO_SOURCES.length;
+            player.src(VIDEO_SOURCES[currentSource]);
+            showStatus('loading');
+            player.play();
+        }
+
+        // 错误代码解释
+        function getErrorDesc(error) {
+            const codes = {
+                1: "视频加载中止",
+                2: "网络错误",
+                3: "视频解码失败",
+                4: "视频格式不支持"
+            };
+            return codes[error.code] || "未知错误";
+        }
+
+        // 微信环境处理
         function isWechat() {
             return /MicroMessenger/i.test(navigator.userAgent);
         }
 
-        // 初始化视频（手动触发加载）
-        function initVideo() {
-            video.setAttribute('src', CDN_SOURCES[currentCDN]);
-            video.load();
-            video.play().catch(e => {
-                if(isWechat()) wechatAlert.style.display = 'block';
-            });
+        // 启动播放器
+        window.onload = () => {
+            initPlayer();
+            if(isWechat()) setupWechat();
+        };
+
+        // 微信专属配置
+        function setupWechat() {
+            const videoEl = document.getElementById('myVideo_html5_api');
+            videoEl.setAttribute('x5-video-player-type', 'h5');
+            videoEl.setAttribute('x5-playsinline', 'true');
+            videoEl.style.objectFit = 'contain';
         }
-
-        // 切换CDN线路
-        function switchCDN() {
-            currentCDN = (currentCDN + 1) % CDN_SOURCES.length;
-            initVideo();
-        }
-
-        // 微信专属交互逻辑
-        if(isWechat()) {
-            video.removeAttribute('controls');
-            video.style.cursor = 'pointer';
-            wechatAlert.style.display = 'block';
-            
-            video.addEventListener('click', () => {
-                if(video.readyState < 3) {
-                    loader.style.display = 'block';
-                    initVideo();
-                }
-            });
-        }
-
-        // 加载状态管理
-        video.addEventListener('waiting', () => {
-            loader.style.display = 'block';
-        });
-
-        video.addEventListener('canplay', () => {
-            loader.style.display = 'none';
-            wechatAlert.style.display = 'none';
-        });
-
-        video.addEventListener('error', () => {
-            loader.style.display = 'none';
-            if(isWechat()) wechatAlert.style.display = 'block';
-        });
-
-        // 首次加载使用最快CDN
-        window.addEventListener('load', () => {
-            if(!isWechat()) initVideo();
-        });
     </script>
 </body>
 </html>
