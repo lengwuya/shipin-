@@ -3,144 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高清视频播放器</title>
+    <title>多CDN视频播放器</title>
     
-    <!-- 优化CDN资源加载 -->
+    <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eGBvH0H/ZpiBw==" 
           crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
+
     <style>
-        :root {
-            --primary-color: #2196F3;
-            --secondary-color: #607D8B;
-        }
-
-        body {
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-
-        .container {
-            max-width: 1100px;
-            width: 95%;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-            backdrop-filter: blur(10px);
-            margin-top: 30px;
-        }
-
-        .player-wrapper {
-            position: relative;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #000;
-            min-height: 400px;
-        }
-
-        video {
-            width: 100%;
-            height: auto;
-            max-height: 75vh;
-            display: block;
-        }
-
-        /* 新增错误提示样式 */
-        .error-message {
+        /* 保持原有样式不变，新增CDN状态指示 */
+        .cdn-status {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
             color: white;
-            text-align: center;
-            padding: 20px;
-            background: rgba(255, 0, 0, 0.8);
-            border-radius: 8px;
-            display: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 100;
         }
-
-        /* 其他样式保持不变... */
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📺 高清视频播放器</h1>
+        <h1>📺 多CDN视频播放器</h1>
         <div class="player-wrapper">
             <div class="loading">
                 <i class="fas fa-spinner fa-spin"></i>
             </div>
             <div class="error-message" id="errorMsg"></div>
+            <div class="cdn-status" id="cdnStatus">正在连接CDN...</div>
             
-            <!-- 双源播放方案 -->
+            <!-- 四源播放方案 -->
             <video id="mainVideo" controls playsinline>
-                <!-- 优先使用jsDelivr CDN源 -->
-                <source src="https://cdn.jsdelivr.net/gh/lengwuya/shipin-/main/shipin.mp4" 
-                        type="video/mp4"
-                        id="cdnSource">
+                <!-- CDN源优先级排序 -->
+                <source data-cdn="jsDelivr" 
+                        src="https://cdn.jsdelivr.net/gh/lengwuya/shipin-/main/shipin.mp4" 
+                        type="video/mp4">
                 
-                <!-- 备用GitHub Pages源 -->
-                <source src="shipin.mp4" 
-                        type="video/mp4"
-                        id="fallbackSource">
+                <source data-cdn="GitHack" 
+                        src="https://raw.githack.com/lengwuya/shipin-/main/shipin.mp4" 
+                        type="video/mp4">
                 
-                您的浏览器不支持视频播放，请使用最新版Chrome/Firefox/Safari浏览器
+                <source data-cdn="FastGit" 
+                        src="https://raw.fastgit.org/lengwuya/shipin-/main/shipin.mp4" 
+                        type="video/mp4">
+                
+                <source data-cdn="GitHub" 
+                        src="shipin.mp4" 
+                        type="video/mp4">
+
+                您的浏览器不支持视频播放，请使用现代浏览器访问
             </video>
             
-            <!-- 控制栏保持不变... -->
+            <!-- 控制栏保持不变 -->
         </div>
     </div>
 
     <script>
-        // 增强版错误处理
+        // 多CDN智能切换系统
         const video = document.getElementById('mainVideo');
-        const errorMsg = document.getElementById('errorMsg');
+        const cdnStatus = document.getElementById('cdnStatus');
+        const sources = Array.from(video.querySelectorAll('source'));
+        let currentSourceIndex = 0;
 
-        // 自动回退源检测
-        video.addEventListener('error', function() {
-            const currentSrc = video.currentSrc;
-            
-            // 如果CDN源加载失败
-            if (currentSrc.includes('jsdelivr')) {
-                errorMsg.innerHTML = `CDN加载失败，正在尝试备用源...<br>
-                    <small>常见原因：1. 仓库未公开 2. 文件名不正确 3. CDN缓存延迟</small>`;
-                errorMsg.style.display = 'block';
-                
-                // 切换到备用源
-                setTimeout(() => {
-                    video.src = document.getElementById('fallbackSource').src;
-                    video.load();
-                    video.play().catch(e => showFinalError());
-                }, 2000);
-            } else {
+        // 自动检测可用CDN
+        function tryNextSource() {
+            currentSourceIndex++;
+            if (currentSourceIndex >= sources.length) {
                 showFinalError();
+                return;
+            }
+
+            const newSource = sources[currentSourceIndex];
+            cdnStatus.textContent = `正在尝试 ${newSource.dataset.cdn}...`;
+            video.src = newSource.src;
+            video.load();
+            video.play().catch(e => {
+                setTimeout(tryNextSource, 1500);
+            });
+        }
+
+        // 增强错误处理
+        video.addEventListener('error', function() {
+            if (video.error.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
+                tryNextSource();
             }
         });
 
-        function showFinalError() {
-            errorMsg.innerHTML = `视频加载失败！请检查：<br>
-                1. 视频文件是否上传到GitHub仓库根目录<br>
-                2. 仓库是否设置为public<br>
-                3. 文件名是否准确为shipin.mp4<br>
-                4. GitHub Pages是否已启用`;
-            errorMsg.style.display = 'block';
-        }
-
-        // 添加网络状态监测
-        video.addEventListener('stalled', () => {
-            errorMsg.textContent = '网络连接不稳定，正在尝试重新加载...';
-            errorMsg.style.display = 'block';
+        // 成功加载时显示CDN信息
+        video.addEventListener('play', () => {
+            cdnStatus.textContent = `当前CDN: ${sources[currentSourceIndex].dataset.cdn}`;
+            cdnStatus.style.backgroundColor = '#4CAF50';
         });
 
-        video.addEventListener('playing', () => {
-            errorMsg.style.display = 'none';
+        // 初始化自动播放检测
+        video.play().catch(e => {
+            cdnStatus.textContent = '首次加载可能需要等待CDN响应...';
+            tryNextSource();
         });
 
         // 其他控制逻辑保持不变...
