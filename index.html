@@ -2,124 +2,126 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- iOS核心优化标签[1,3](@ref) -->
+    <!-- 增强微信兼容性 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="format-detection" content="telephone=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
-    <!-- 预加载关键资源[6](@ref) -->
-    <link rel="preload" href="video.mp4" as="video" type="video/mp4">
-    
-    <title>优化版移动端页面</title>
-    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="x5-page-mode" content="app">
+    <meta name="x5-orientation" content="portrait">
+    <meta name="x5-fullscreen" content="true">
+    <meta name="full-screen" content="yes">
+    <title>第⑦次测试</title>
     <style>
-        /* 基础重置[3,7](@ref) */
         * {
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
-        
-        /* 媒体容器定位[1,7](@ref) */
-        .media-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100vw;
-            height: 56.25vw; /* 16:9比例 */
-            max-height: 100vh;
+
+        body {
             background: #000;
+            width: 100vw;
+            height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right)
+                     env(safe-area-inset-bottom) env(safe-area-inset-left);
+            position: relative;
+            overflow: hidden;
+            /* 新增iOS背景修复 */
+            -webkit-overflow-scrolling: touch;
         }
-        
-        /* 硬件加速优化[3,7](@ref) */
-        video {
+
+        .nav-buttons {
+            position: absolute;
+            top: max(15px, env(safe-area-inset-top));
+            right: max(15px, env(safe-area-inset-right));
+            z-index: 1000;
+            display: flex;
+            gap: 12px;
+            flex-direction: column;
+        }
+
+        .wechat-btn {
+            padding: 10px 20px;
+            background: rgba(0, 255, 157, 0.15);
+            border: 1px solid #00ff9d;
+            border-radius: 25px;
+            color: #00ff9d;
+            text-decoration: none;
+            font-size: 14px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            /* 新增点击反馈 */
+            -webkit-transform: translateZ(0);
+        }
+
+        .wechat-btn:active {
+            background: rgba(0, 255, 157, 0.3);
+            transform: scale(0.95);
+        }
+
+        /* 新增媒体容器样式 */
+        #media-container {
+            position: absolute;
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-        }
-        
-        /* 播放按钮样式[3](@ref) */
-        .play-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.8);
-            border: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .play-btn.active {
-            opacity: 1;
+            -webkit-user-select: none;
+            user-select: none;
         }
     </style>
-    
-    <!-- 微信JS-SDK支持[1](@ref) -->
-    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
 </head>
 <body>
-    <!-- 视频容器[1,7](@ref) -->
-    <div class="media-container">
-        <video 
-            id="mainVideo"
-            webkit-playsinline="true"
-            playsinline
-            muted
-            preload="metadata"
-            poster="poster.jpg">
-            <source src="video.mp4" type="video/mp4">
-            <source src="video.webm" type="video/webm">
-            <p>您的浏览器不支持视频播放</p>
-        </video>
-        <button class="play-btn" id="playBtn">▶</button>
+    <div class="nav-buttons">
+        <a href="javascript:;" class="wechat-btn" id="playBtn">启动播放</a>
+        <a href="javascript:;" class="wechat-btn">功能按钮</a>
     </div>
+    
+    <!-- 新增媒体容器 -->
+    <video id="media-container" webkit-playsinline playsinline></video>
 
     <script>
-        // 自动播放处理[1,3](@ref)
-        document.addEventListener('DOMContentLoaded', function() {
-            const video = document.getElementById('mainVideo');
-            const playBtn = document.getElementById('playBtn');
-            
-            // 微信环境适配[1](@ref)
-            if (typeof WeixinJSBridge !== 'undefined') {
-                WeixinJSBridge.invoke('getNetworkType', {}, () => {
-                    video.play().catch(() => showPlayButton());
-                });
-            } else {
-                // 自动播放尝试[3](@ref)
-                const playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => showPlayButton());
-                }
-            }
-
-            // 用户交互处理[7](@ref)
-            playBtn.addEventListener('click', () => {
-                video.muted = false;
-                video.play();
-                playBtn.classList.remove('active');
+        // 微信JS-SDK初始化
+        document.addEventListener('WeixinJSBridgeReady', function() {
+            WeixinJSBridge.invoke('getNetworkType', {}, function(res) {
+                console.log('微信网络类型:', res.networkType);
             });
+        });
 
-            function showPlayButton() {
-                playBtn.classList.add('active');
+        // 播放控制逻辑
+        const playBtn = document.getElementById('playBtn');
+        const mediaContainer = document.getElementById('media-container');
+        
+        // 添加用户交互触发
+        let isFirstPlay = true;
+        playBtn.addEventListener('click', async () => {
+            if (isFirstPlay) {
+                try {
+                    await mediaContainer.play();
+                    // iOS自动播放破解
+                    mediaContainer.muted = false;
+                    mediaContainer.autoplay = true;
+                } catch (e) {
+                    alert('首次播放需要点击确认 → ' + e.message);
+                }
+                isFirstPlay = false;
             }
         });
 
-        // 可视状态检测[6](@ref)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                video.pause();
-            } else {
-                video.play().catch(() => {});
-            }
-        });
+        // 自动播放兼容处理
+        mediaContainer.muted = true;
+        mediaContainer.autoplay = true;
+        mediaContainer.loop = true;
+        
+        // 检测iOS WebKit
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+            mediaContainer.setAttribute('playsinline', 'true');
+            mediaContainer.setAttribute('preload', 'auto');
+        }
+
+        // 动态加载媒体源（示例）
+        // mediaContainer.src = 'your-media-source.mp4';
     </script>
 </body>
 </html>
